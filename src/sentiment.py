@@ -1,32 +1,38 @@
-import tweepy, os
+import requests
+import os
 from datetime import datetime, timedelta
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from newsapi import NewsApiClient
-from .utils import cache
+from .. import utils  # Use absolute import
 
-twitter = tweepy.Client(bearer_token=os.getenv("TWITTER_BEARER"))
-newsapi = NewsApiClient(api_key=os.getenv("NEWSAPI_KEY"))
 analyzer = SentimentIntensityAnalyzer()
+newsapi = NewsApiClient(api_key=os.getenv("NEWSAPI_KEY"))
 
-@cache("sent")
+@utils.cache("sent")
 def get_sentiment(ticker: str) -> dict:
     score = 0
     mentions = 0
 
-    # Twitter
-    try:
-        tweets = twitter.search_recent_tweets(query=f"${ticker} lang:en -is:retweet", max_results=30)
-        if tweets.data:
-            for t in tweets.data:
-                s = analyzer.polarity_scores(t.text)["compound"]
-                score += s
-            mentions += len(tweets.data)
-    except:
-        pass
+    # === X (Twitter) API v2 via requests ===
+    bearer = os.getenv("TWITTER_BEARER")
+    if bearer:
+        headers = {"Authorization": f"Bearer {bearer}"}
+        query = f"${ticker} lang:en -is:retweet"
+        url = f"https://api.twitter.com/2/tweets/search/recent?query={query}&max_results=10"
+        try:
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json().get("data", [])
+                for tweet in data:
+                    s = analyzer.polarity_scores(tweet["text"])["compound"]
+                    score += s
+                mentions += len(data)
+        except:
+            pass
 
-    # News
+    # === News API ===
     try:
-        news = newsapi.get_everything(q=ticker, language="en", page_size=10, sort_by="publishedAt")
+        news = newsapi.get_everything(q=ticker, language="en", page_size=10)
         for a in news.get("articles", []):
             text = a["title"] + " " + a.get("description", "")
             s = analyzer.polarity_scores(text)["compound"]
@@ -35,4 +41,7 @@ def get_sentiment(ticker: str) -> dict:
     except:
         pass
 
-    return {"sentiment_score": score, "mentions": mentions}
+    return {
+        "sentiment_score": score,
+        "mentions": mentions
+    }
