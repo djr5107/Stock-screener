@@ -3,17 +3,19 @@ import os
 from datetime import datetime, timedelta
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from newsapi import NewsApiClient
-from .. import utils  # Use absolute import
+
+# Import cache decorator correctly
+from src.utils import cache
 
 analyzer = SentimentIntensityAnalyzer()
 newsapi = NewsApiClient(api_key=os.getenv("NEWSAPI_KEY"))
 
-@utils.cache("sent")
+@cache("sent")
 def get_sentiment(ticker: str) -> dict:
     score = 0
     mentions = 0
 
-    # === X (Twitter) API v2 via requests ===
+    # === X (Twitter) API v2 ===
     bearer = os.getenv("TWITTER_BEARER")
     if bearer:
         headers = {"Authorization": f"Bearer {bearer}"}
@@ -27,8 +29,8 @@ def get_sentiment(ticker: str) -> dict:
                     s = analyzer.polarity_scores(tweet["text"])["compound"]
                     score += s
                 mentions += len(data)
-        except:
-            pass
+        except Exception as e:
+            pass  # Silent fail
 
     # === News API ===
     try:
