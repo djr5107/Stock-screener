@@ -5,7 +5,7 @@ def screen(tickers, weights):
             fund = get_fundamentals(t)
             tech = get_technicals(t)
             sent = get_sentiment(t)
-            ind = sector_growth(fund["sector"])
+            ind = sector_growth(fund.get("sector", "Unknown"))
             moat = moat_score(fund)
 
             score = 0
@@ -28,14 +28,16 @@ def screen(tickers, weights):
             print(f"Error with {t}: {e}")
             continue
 
-    # === FIX: Handle empty results ===
+    # === FINAL FIX: No sort if empty ===
     if not rows:
-        return pd.DataFrame(columns=[
+        empty_df = pd.DataFrame(columns=[
             "ticker", "revenue_growth", "eps_growth", "fcf_last", "total_debt",
             "ev_ebitda", "forward_pe", "sector", "gross_margin", "roic",
-            "price", "sma50", "rsi14", "sentiment_score", "mentions",
-            "sector_growth", "moat_score", "composite_score", "signal"
+            "price", "sma20", "sma50", "sma200", "rsi14", "above_sma50", "golden_cross",
+            "sentiment_score", "mentions", "sector_growth", "moat_score",
+            "composite_score", "signal"
         ])
+        return empty_df
 
     df = pd.DataFrame(rows)
     return df.sort_values("composite_score", ascending=False)
