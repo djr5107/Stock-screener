@@ -1,0 +1,15 @@
+streamlit==1.38.0
+pandas==2.2.3
+numpy==2.1.2
+yfinance==0.2.44
+sec-api==1.0.9
+alpha-vantage==2.3.1
+tweepy==4.14.0
+praw==7.7.1
+sqlalchemy==2.0.36
+cachetools==5.5.0
+plotly==5.24.1
+python-dotenv==1.0.1
+vaderSentiment==3.3.2
+newsapi-python==0.2.7
+scikit-learn==1.5.2
